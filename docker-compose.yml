@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: medvision-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    profiles:
+      - full
+      - dev
+
+  # Express Backend Server
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: medvision-server
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+      - ./uploads:/uploads
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/medvision
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+      - PORT=5001
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRE=${JWT_EXPIRE}
+    depends_on:
+      - mongodb
+    profiles:
+      - full
+      - dev
+
+  # React Frontend (Vite)
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: medvision-client
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:5001/api
+    profiles:
+      - full
+      - dev
+
+  # Ollama for Local AI Inference
+  # NOTE: On macOS, this will run on CPU. For GPU, run Ollama natively on your Mac
+  # and use the 'dev' profile instead.
+  ollama:
+    image: ollama/ollama:latest
+    container_name: medvision-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    profiles:
+      - full
+
+volumes:
+  mongo-data:
+  ollama-data:
