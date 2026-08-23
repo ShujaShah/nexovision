@@ -177,7 +177,7 @@ const PatientsPage = () => {
                   <th className="py-3 px-4 font-medium">Patient Name</th>
                   <th className="py-3 px-4 font-medium">Age/DOB</th>
                   <th className="py-3 px-4 font-medium">Contact</th>
-                  <th className="py-3 px-4 font-medium">Added On</th>
+                  <th className="py-3 px-4 font-medium">Added By</th>
                   <th className="py-3 px-4 font-medium text-right">Actions</th>
                 </tr>
               </thead>
@@ -208,7 +208,10 @@ const PatientsPage = () => {
                       </div>
                     </td>
                     <td className="py-4 px-4 text-[var(--text-secondary)]">
-                      {new Date(patient.createdAt).toLocaleDateString()}
+                      <div className="flex flex-col">
+                        <span className="text-white text-sm font-medium">{patient.assignedDoctor?.name || 'Unknown'}</span>
+                        <span className="text-xs">{new Date(patient.createdAt).toLocaleDateString()}</span>
+                      </div>
                     </td>
                     <td className="py-4 px-4 text-right">
                       <Link 

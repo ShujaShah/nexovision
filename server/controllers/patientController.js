@@ -53,7 +53,8 @@ exports.createPatient = async (req, res, next) => {
     req.body.assignedDoctor = req.user.id;
     req.body.clinic = req.user.clinic;
     
-    const patient = await Patient.create(req.body);
+    let patient = await Patient.create(req.body);
+    patient = await patient.populate('assignedDoctor', 'name email');
     res.status(201).json({ success: true, data: patient });
   } catch (error) {
     next(error);
