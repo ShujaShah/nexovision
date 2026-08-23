@@ -1,5 +1,5 @@
 import { useState, useContext } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { Activity } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -39,10 +39,10 @@ const LoginPage = () => {
       >
         <div className="glass-panel p-8 sm:p-10">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-12 h-12 rounded-xl bg-[var(--accent-primary)] flex items-center justify-center text-white mb-4 shadow-lg shadow-blue-500/20">
-              <Activity size={28} />
+            <div className="w-16 h-16 rounded-xl flex items-center justify-center mb-4 shadow-lg shadow-blue-500/10 bg-white/5 p-2">
+              <img src="/favicon.png" alt="Nexovision Logo" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Welcome to MedVision</h1>
+            <h1 className="text-2xl font-bold text-white tracking-tight">Welcome to Nexovision</h1>
             <p className="text-[var(--text-secondary)] mt-2 text-center text-sm">
               AI-powered medical imaging diagnosis platform
             </p>
@@ -92,6 +92,12 @@ const LoginPage = () => {
           </form>
 
           <div className="mt-8 pt-6 border-t border-[var(--border-color)] text-center text-sm text-[var(--text-secondary)]">
+            <p className="mb-4">
+              Don't have an account?{' '}
+              <Link to="/register-clinic" className="text-[var(--accent-primary)] hover:text-blue-400 transition-colors font-medium">
+                Register your clinic
+              </Link>
+            </p>
             Powered by Google MedGemma 1.5
           </div>
         </div>

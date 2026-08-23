@@ -6,7 +6,9 @@ import Layout from './components/common/Layout';
 
 // Pages
 import LoginPage from './pages/LoginPage';
+import RegisterClinicPage from './pages/RegisterClinicPage';
 import DashboardPage from './pages/DashboardPage';
+import ClinicSettingsPage from './pages/ClinicSettingsPage';
 
 import UploadScanPage from './pages/UploadScanPage';
 import ScansPage from './pages/ScansPage';
@@ -22,6 +24,7 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register-clinic" element={<RegisterClinicPage />} />
           
           {/* Protected Routes inside Layout */}
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
@@ -33,6 +36,14 @@ function App() {
             <Route path="scans/upload" element={<UploadScanPage />} />
             <Route path="scans/:id" element={<ScanDetailPage />} />
             <Route path="reports" element={<ReportsPage />} />
+            <Route 
+              path="settings" 
+              element={
+                <ProtectedRoute allowedRoles={['clinic_admin', 'admin']}>
+                  <ClinicSettingsPage />
+                </ProtectedRoute>
+              } 
+            />
           </Route>
         </Routes>
       </Router>

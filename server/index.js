@@ -23,15 +23,24 @@ const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 // Mount routers
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/patients', require('./routes/patientRoutes'));
-app.use('/api/scans', require('./routes/scanRoutes'));
-app.use('/api/reports', require('./routes/reportRoutes'));
-app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+const authRoutes = require('./routes/authRoutes');
+const clinicRoutes = require('./routes/clinicRoutes');
+const patientRoutes = require('./routes/patientRoutes');
+const scanRoutes = require('./routes/scanRoutes');
+const reportRoutes = require('./routes/reportRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
+
+// Mount routers
+app.use('/api/auth', authRoutes);
+app.use('/api/clinics', clinicRoutes);
+app.use('/api/patients', patientRoutes);
+app.use('/api/scans', scanRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Default route
 app.get('/', (req, res) => {
-  res.send('MedVision AI API is running...');
+  res.send('Nexovision AI API is running...');
 });
 
 // Error Handler Middleware

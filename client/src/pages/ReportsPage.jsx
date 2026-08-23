@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import BodyPartIcon from '../components/common/BodyPartIcon';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 import { FileText, Search, ExternalLink, Clock, FileCheck, Trash2 } from 'lucide-react';
@@ -109,7 +110,12 @@ const ReportsPage = () => {
                       </div>
                     </td>
                     <td className="p-4 text-[var(--text-primary)]">
-                      {report.scan ? `${report.scan.imageType} - ${report.scan.bodyPart}` : 'Unknown Scan'}
+                      {report.scan ? (
+                        <div className="flex items-center gap-2">
+                          <BodyPartIcon bodyPart={report.scan.bodyPart} className="text-[var(--text-secondary)]" />
+                          <span>{report.scan.imageType} - <span className="capitalize">{report.scan.bodyPart}</span></span>
+                        </div>
+                      ) : 'Unknown Scan'}
                     </td>
                     <td className="p-4 text-[var(--text-secondary)]">
                       {new Date(report.createdAt).toLocaleDateString()}

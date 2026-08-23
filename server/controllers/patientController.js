@@ -12,7 +12,7 @@ exports.getPatients = async (req, res, next) => {
 
     let query = {};
     if (req.user.role !== 'admin') {
-      query.assignedDoctor = req.user.id;
+      query.clinic = req.user.clinic;
     }
 
     if (req.query.search) {
@@ -49,8 +49,10 @@ exports.getPatients = async (req, res, next) => {
 // @access  Private (Doctor/Admin)
 exports.createPatient = async (req, res, next) => {
   try {
-    // Add user to req.body
+    // Add user and clinic to req.body
     req.body.assignedDoctor = req.user.id;
+    req.body.clinic = req.user.clinic;
+    
     const patient = await Patient.create(req.body);
     res.status(201).json({ success: true, data: patient });
   } catch (error) {
@@ -67,6 +69,11 @@ exports.getPatient = async (req, res, next) => {
 
     if (!patient) {
       return res.status(404).json({ success: false, message: 'Patient not found' });
+    }
+
+    // Verify clinic ownership
+    if (req.user.role !== 'admin' && patient.clinic.toString() !== req.user.clinic.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized to access this patient' });
     }
 
     // Include recent scans in the response
@@ -87,6 +94,11 @@ exports.updatePatient = async (req, res, next) => {
 
     if (!patient) {
       return res.status(404).json({ success: false, message: 'Patient not found' });
+    }
+
+    // Verify clinic ownership
+    if (req.user.role !== 'admin' && patient.clinic.toString() !== req.user.clinic.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized to update this patient' });
     }
 
     patient = await Patient.findByIdAndUpdate(req.params.id, req.body, {

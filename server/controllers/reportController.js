@@ -10,6 +10,9 @@ exports.getReports = async (req, res, next) => {
     const skip = (page - 1) * limit;
 
     let query = {};
+    if (req.user.role !== 'admin') {
+      query.clinic = req.user.clinic;
+    }
     if (req.query.search) {
       const Patient = require('../models/Patient');
       const patients = await Patient.find({
@@ -65,6 +68,10 @@ exports.deleteReport = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Report not found' });
     }
 
+    if (req.user.role !== 'admin' && report.clinic.toString() !== req.user.clinic.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized to delete this report' });
+    }
+
     // Delete associated physical PDF file
     if (report.pdfPath) {
       const fs = require('fs');
@@ -97,6 +104,10 @@ exports.getReport = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Report not found' });
     }
 
+    if (req.user.role !== 'admin' && report.clinic.toString() !== req.user.clinic.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized to view this report' });
+    }
+
     res.status(200).json({ success: true, data: report });
   } catch (error) {
     next(error);
@@ -112,6 +123,10 @@ exports.reviewReport = async (req, res, next) => {
 
     if (!report) {
       return res.status(404).json({ success: false, message: 'Report not found' });
+    }
+
+    if (req.user.role !== 'admin' && report.clinic.toString() !== req.user.clinic.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized to update this report' });
     }
 
     report.doctorNotes = req.body.doctorNotes;
@@ -135,10 +150,16 @@ exports.finalizeReport = async (req, res, next) => {
     let report = await Report.findById(req.params.id)
       .populate('patient')
       .populate('scan')
-      .populate('generatedBy');
+      .populate('generatedBy')
+      .populate('clinic');
 
     if (!report) {
       return res.status(404).json({ success: false, message: 'Report not found' });
+    }
+
+    const reportClinicId = report.clinic && report.clinic._id ? report.clinic._id.toString() : report.clinic.toString();
+    if (req.user.role !== 'admin' && reportClinicId !== req.user.clinic.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized to finalize this report' });
     }
 
     if (report.status === 'finalized') {
@@ -173,6 +194,10 @@ exports.downloadPdf = async (req, res, next) => {
     
     if (!report || !report.pdfPath) {
       return res.status(404).json({ success: false, message: 'PDF not found' });
+    }
+
+    if (req.user.role !== 'admin' && report.clinic.toString() !== req.user.clinic.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized to download this report' });
     }
 
     // In a real app, you might serve this directly or use res.download

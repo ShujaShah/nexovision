@@ -12,6 +12,9 @@ exports.getScans = async (req, res, next) => {
     const skip = (page - 1) * limit;
 
     let query = {};
+    if (req.user.role !== 'admin') {
+      query.clinic = req.user.clinic;
+    }
     if (req.query.search) {
       // Find patients matching the search term to filter scans by patient
       const Patient = require('../models/Patient');
@@ -62,6 +65,10 @@ exports.deleteScan = async (req, res, next) => {
     const scan = await Scan.findById(req.params.id);
     if (!scan) {
       return res.status(404).json({ success: false, message: 'Scan not found' });
+    }
+
+    if (req.user.role !== 'admin' && scan.clinic.toString() !== req.user.clinic.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized to delete this scan' });
     }
 
     // Delete associated physical image file
@@ -115,10 +122,11 @@ exports.uploadScan = async (req, res, next) => {
       imageType,
       bodyPart,
       originalFilename: req.file.originalname,
-      filePath: `/uploads/${req.file.filename}`, // Assuming express static serves this
+      filePath: `/uploads/images/${req.file.filename}`, // Assuming express static serves this
       fileSize: req.file.size,
       mimeType: req.file.mimetype,
       status: 'pending',
+      clinic: req.user.clinic,
     });
 
     res.status(201).json({ success: true, data: scan });
@@ -140,6 +148,10 @@ exports.getScan = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Scan not found' });
     }
 
+    if (req.user.role !== 'admin' && scan.clinic.toString() !== req.user.clinic.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized to view this scan' });
+    }
+
     res.status(200).json({ success: true, data: scan });
   } catch (error) {
     next(error);
@@ -158,6 +170,10 @@ exports.analyzeScan = async (req, res, next) => {
 
     if (!scan) {
       return res.status(404).json({ success: false, message: 'Scan not found' });
+    }
+
+    if (req.user.role !== 'admin' && scan.clinic.toString() !== req.user.clinic.toString()) {
+      return res.status(403).json({ success: false, message: 'Not authorized to analyze this scan' });
     }
 
     if (scan.status === 'analyzing') {
@@ -192,6 +208,7 @@ exports.analyzeScan = async (req, res, next) => {
       scan: scan._id,
       patient: scan.patient,
       generatedBy: req.user.id,
+      clinic: req.user.clinic,
       aiFindingsRaw: analysis.raw,
       structuredFindings: analysis.structured,
       status: 'draft'

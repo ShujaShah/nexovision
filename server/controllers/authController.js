@@ -8,12 +8,12 @@ const generateToken = (id) => {
   });
 };
 
-// @desc    Register a user
+// @desc    Register a user (doctor/patient) within an existing clinic
 // @route   POST /api/auth/register
-// @access  Public
+// @access  Public (In production, usually Private for Doctors)
 exports.register = async (req, res, next) => {
   try {
-    const { name, email, password, role, specialization, licenseNumber } = req.body;
+    const { name, email, password, role, specialization, licenseNumber, clinicId } = req.body;
 
     // Check if user exists
     const userExists = await User.findOne({ email });
@@ -21,6 +21,12 @@ exports.register = async (req, res, next) => {
     if (userExists) {
       res.status(400);
       throw new Error('User already exists');
+    }
+
+    // Require clinicId unless global admin
+    if (role !== 'admin' && !clinicId) {
+      res.status(400);
+      throw new Error('Clinic ID is required');
     }
 
     // Create user
@@ -31,6 +37,7 @@ exports.register = async (req, res, next) => {
       role,
       specialization: role === 'doctor' ? specialization : undefined,
       licenseNumber: role === 'doctor' ? licenseNumber : undefined,
+      clinic: clinicId || undefined
     });
 
     if (user) {
@@ -39,6 +46,7 @@ exports.register = async (req, res, next) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        clinic: user.clinic,
         token: generateToken(user._id),
       });
     } else {
@@ -46,6 +54,69 @@ exports.register = async (req, res, next) => {
       throw new Error('Invalid user data');
     }
   } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Register a new clinic and its admin
+// @route   POST /api/auth/register-clinic
+// @access  Public
+exports.registerClinic = async (req, res, next) => {
+  const mongoose = require('mongoose');
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { clinicName, address, contactEmail, contactPhone, adminName, adminEmail, adminPassword } = req.body;
+    
+    // Check if admin email exists
+    const userExists = await User.findOne({ email: adminEmail }).session(session);
+    if (userExists) {
+      res.status(400);
+      throw new Error('User email already exists');
+    }
+
+    const Clinic = require('../models/Clinic');
+    
+    // 1. Create Clinic (without adminId first)
+    const [clinic] = await Clinic.create([{
+      name: clinicName,
+      address,
+      contactEmail,
+      contactPhone,
+      adminId: new mongoose.Types.ObjectId() // Placeholder to pass validation
+    }], { session });
+
+    // 2. Create Admin User
+    const [adminUser] = await User.create([{
+      name: adminName,
+      email: adminEmail,
+      password: adminPassword,
+      role: 'clinic_admin',
+      clinic: clinic._id
+    }], { session });
+
+    // 3. Update Clinic with actual adminId
+    clinic.adminId = adminUser._id;
+    await clinic.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(201).json({
+      success: true,
+      data: {
+        _id: adminUser.id,
+        name: adminUser.name,
+        email: adminUser.email,
+        role: adminUser.role,
+        clinic: clinic._id,
+        token: generateToken(adminUser._id),
+      }
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     next(error);
   }
 };

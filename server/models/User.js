@@ -24,8 +24,16 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['doctor', 'admin', 'patient'],
+      enum: ['doctor', 'admin', 'patient', 'clinic_admin'],
       default: 'doctor',
+    },
+    clinic: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'Clinic',
+      required: function() {
+        // Only global admins don't need a clinic
+        return this.role !== 'admin';
+      }
     },
     specialization: {
       type: String,
@@ -50,9 +58,9 @@ const userSchema = new mongoose.Schema(
 );
 
 // Encrypt password using bcrypt before saving
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
   if (!this.isModified('password')) {
-    next();
+    return;
   }
 
   const salt = await bcrypt.genSalt(10);

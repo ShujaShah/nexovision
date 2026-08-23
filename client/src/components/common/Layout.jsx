@@ -7,7 +7,7 @@ import { Bell } from 'lucide-react';
 const Navbar = () => {
   return (
     <div className="h-16 flex items-center justify-between px-8 border-b border-[var(--border-color)] bg-[var(--bg-primary)]/80 backdrop-blur-md sticky top-0 z-10">
-      <h1 className="text-lg font-semibold text-white">MedVision AI Portal</h1>
+      <h1 className="text-lg font-semibold text-white">Nexovision AI Portal</h1>
       <div className="flex items-center gap-4">
         <button className="p-2 rounded-full hover:bg-[var(--bg-hover)] text-[var(--text-secondary)] transition-colors relative">
           <Bell size={20} />

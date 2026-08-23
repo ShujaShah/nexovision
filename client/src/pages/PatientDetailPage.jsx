@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { User, Activity, Clock, Image, ArrowLeft } from 'lucide-react';
+import { Calendar, Phone, Mail, MapPin, Activity, FileText, UploadCloud, User, Clock, Image, ArrowLeft } from 'lucide-react';
+import BodyPartIcon from '../components/common/BodyPartIcon';
 
 const PatientDetailPage = () => {
   const { id } = useParams();
@@ -122,9 +123,10 @@ const PatientDetailPage = () => {
                         />
                       </div>
                       <div>
-                        <p className="text-white font-medium flex items-center gap-2">
+                        <div className="text-white font-medium capitalize flex items-center gap-2 mb-1">
+                          <BodyPartIcon bodyPart={scan.bodyPart} className="text-[var(--text-secondary)]" />
                           {scan.bodyPart} <span className="badge badge-primary uppercase scale-75 origin-left">{scan.imageType}</span>
-                        </p>
+                        </div>
                         <p className="text-xs text-[var(--text-secondary)]">
                           {new Date(scan.createdAt).toLocaleString()}
                         </p>

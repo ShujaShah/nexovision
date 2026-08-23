@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
+import BodyPartIcon from '../components/common/BodyPartIcon';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { Users, Image as ImageIcon, FileText, CheckCircle, BrainCircuit, ArrowRight } from 'lucide-react';
@@ -92,8 +93,9 @@ const DashboardPage = () => {
                       <ImageIcon size={18} />
                     </div>
                     <div>
-                      <p className="text-white font-medium group-hover:text-[var(--accent-primary)] transition-colors">
-                        {activity.patient.firstName} {activity.patient.lastName} - {activity.bodyPart}
+                      <p className="text-white font-medium flex items-center gap-2 group-hover:text-[var(--accent-primary)] transition-colors">
+                        <BodyPartIcon bodyPart={activity.bodyPart} size={14} className="text-inherit opacity-70" />
+                        {activity.patient.firstName} {activity.patient.lastName} - <span className="capitalize">{activity.bodyPart}</span>
                       </p>
                       <p className="text-xs text-[var(--text-secondary)]">
                         {new Date(activity.createdAt).toLocaleString()}

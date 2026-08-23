@@ -17,6 +17,11 @@ const reportSchema = new mongoose.Schema(
       ref: 'User',
       required: true, // Typically the doctor who initiated analysis
     },
+    clinic: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'Clinic',
+      required: true,
+    },
     aiFindingsRaw: {
       type: String, // Raw output from MedGemma
     },

@@ -4,6 +4,7 @@ import api from '../services/api';
 import toast from 'react-hot-toast';
 import { FileImage, BrainCircuit, FileWarning, Search, Eye, Trash2 } from 'lucide-react';
 import Pagination from '../components/common/Pagination';
+import BodyPartIcon from '../components/common/BodyPartIcon';
 
 const ScansPage = () => {
   const [scans, setScans] = useState([]);
@@ -113,7 +114,12 @@ const ScansPage = () => {
                       </div>
                     </td>
                     <td className="p-4 text-[var(--text-primary)]">{scan.imageType}</td>
-                    <td className="p-4 text-[var(--text-primary)] capitalize">{scan.bodyPart}</td>
+                    <td className="p-4 text-[var(--text-primary)] capitalize">
+                      <div className="flex items-center gap-2">
+                        <BodyPartIcon bodyPart={scan.bodyPart} className="text-[var(--text-secondary)]" />
+                        {scan.bodyPart}
+                      </div>
+                    </td>
                     <td className="p-4 text-[var(--text-secondary)]">
                       {new Date(scan.createdAt).toLocaleDateString()}
                     </td>

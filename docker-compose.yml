@@ -4,7 +4,7 @@ services:
   # MongoDB Database
   mongodb:
     image: mongo:7
-    container_name: medvision-mongo
+    container_name: nexovision-mongo
     ports:
       - "27017:27017"
     volumes:
@@ -18,7 +18,7 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
-    container_name: medvision-server
+    container_name: nexovision-server
     ports:
       - "5001:5001"
     volumes:
@@ -26,7 +26,7 @@ services:
       - /app/node_modules
       - ./uploads:/uploads
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/medvision
+      - MONGO_URI=${MONGO_URI:-mongodb://mongodb:27017/medvision}
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
       - PORT=5001
       - JWT_SECRET=${JWT_SECRET}
@@ -42,7 +42,7 @@ services:
     build:
       context: ./client
       dockerfile: Dockerfile
-    container_name: medvision-client
+    container_name: nexovision-client
     ports:
       - "5173:5173"
     volumes:
@@ -59,7 +59,7 @@ services:
   # and use the 'dev' profile instead.
   ollama:
     image: ollama/ollama:latest
-    container_name: medvision-ollama
+    container_name: nexovision-ollama
     ports:
       - "11434:11434"
     volumes:

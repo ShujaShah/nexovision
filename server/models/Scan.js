@@ -12,6 +12,11 @@ const scanSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    clinic: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'Clinic',
+      required: true,
+    },
     imageType: {
       type: String,
       enum: ['xray', 'ctscan', 'mri', 'ultrasound', 'other'],

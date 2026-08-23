@@ -7,12 +7,11 @@ const Report = require('../models/Report');
 // @access  Private
 exports.getStats = async (req, res, next) => {
   try {
-    const isDoctor = req.user.role === 'doctor';
-    
-    // Base filters based on role
-    const patientFilter = isDoctor ? { assignedDoctor: req.user.id } : {};
-    const scanFilter = isDoctor ? { uploadedBy: req.user.id } : {};
-    const reportFilter = isDoctor ? { generatedBy: req.user.id } : {};
+    // Base filters based on clinic (unless global admin)
+    const baseFilter = req.user.role === 'admin' ? {} : { clinic: req.user.clinic };
+    const patientFilter = { ...baseFilter };
+    const scanFilter = { ...baseFilter };
+    const reportFilter = { ...baseFilter };
 
     // Get total counts
     const totalPatients = await Patient.countDocuments(patientFilter);

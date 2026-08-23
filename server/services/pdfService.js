@@ -21,8 +21,10 @@ exports.generateReportPDF = async (report) => {
       doc.pipe(stream);
 
       // --- Header ---
-      doc.fontSize(20).font('Helvetica-Bold').text('MedVision AI', { align: 'center' });
+      const clinicName = report.clinic && report.clinic.name ? report.clinic.name : 'Nexovision Clinic';
+      doc.fontSize(20).font('Helvetica-Bold').text(clinicName, { align: 'center' });
       doc.fontSize(10).font('Helvetica').text('Automated Medical Imaging Diagnostic Report', { align: 'center' });
+      doc.fontSize(8).font('Helvetica-Oblique').text('Powered by Nexovision', { align: 'center' });
       doc.moveDown();
       doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
       doc.moveDown();
@@ -98,15 +100,17 @@ exports.generateReportPDF = async (report) => {
       }
 
       // --- Footer / Disclaimer ---
-      doc.moveTo(50, 700).lineTo(550, 700).stroke();
+      doc.moveDown(2);
+      doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+      doc.moveDown();
       doc.fontSize(8).font('Helvetica-Oblique').text(
-        'DISCLAIMER: This report was generated with the assistance of MedGemma AI. It is intended to support, not replace, the clinical judgment of a qualified healthcare professional. All findings must be clinically correlated.',
-        50, 710,
+        'DISCLAIMER: This report was generated with the assistance of Nexovision AI. It is intended to support, not replace, the clinical judgment of a qualified healthcare professional. All findings must be clinically correlated.',
         { align: 'center', width: 500 }
       );
       
       if (report.status === 'finalized' && report.reviewedBy) {
-        doc.text(`Electronically Reviewed and Finalized by: ${report.reviewedBy.name} on ${new Date(report.reviewedAt).toLocaleString()}`, 50, 740, { align: 'center' });
+        doc.moveDown();
+        doc.text(`Electronically Reviewed and Finalized by: ${report.reviewedBy.name} on ${new Date(report.reviewedAt).toLocaleString()}`, { align: 'center' });
       }
 
       doc.end();

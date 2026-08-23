@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import ScanViewer from '../components/scans/ScanViewer';
+import BodyPartIcon from '../components/common/BodyPartIcon';
 import FindingsPanel from '../components/reports/FindingsPanel';
 import toast from 'react-hot-toast';
 import { BrainCircuit, FileCheck, FileWarning, ArrowLeft, Loader2, Save } from 'lucide-react';
@@ -117,6 +118,7 @@ const ScanDetailPage = () => {
           </button>
           <div>
             <h1 className="text-xl font-bold text-white flex items-center gap-3">
+              <BodyPartIcon bodyPart={scan.bodyPart} size={24} className="text-blue-400" />
               {scan.patient.firstName} {scan.patient.lastName}'s {scan.bodyPart} Scan
               
               {scan.status === 'completed' && <span className="badge badge-success flex items-center gap-1"><FileCheck size={12}/> Analyzed</span>}

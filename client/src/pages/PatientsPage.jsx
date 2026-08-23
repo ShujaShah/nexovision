@@ -239,8 +239,7 @@ const PatientsPage = () => {
         <PatientForm 
           onClose={() => setShowModal(false)} 
           onSave={(newPatient) => {
-            setPatients([newPatient, ...patients]);
-            fetchPatients();
+            setPatients(prev => [newPatient, ...prev].slice(0, 10)); // keep only limit
           }} 
         />
       )}

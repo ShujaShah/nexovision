@@ -1,7 +1,7 @@
 import { useContext } from 'react';
 import { NavLink } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { LayoutDashboard, Users, FileText, Image, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Image, LogOut, Settings } from 'lucide-react';
 
 const Sidebar = () => {
   const { user, logout } = useContext(AuthContext);
@@ -13,14 +13,16 @@ const Sidebar = () => {
     { name: 'Reports', path: '/reports', icon: <FileText size={20} /> },
   ];
 
+  if (user?.role === 'clinic_admin' || user?.role === 'admin') {
+    navItems.push({ name: 'Clinic Settings', path: '/settings', icon: <Settings size={20} /> });
+  }
+
   return (
     <div className="w-64 h-screen bg-[var(--bg-secondary)] border-r border-[var(--border-color)] flex flex-col fixed left-0 top-0">
       <div className="h-16 flex items-center px-6 border-b border-[var(--border-color)]">
         <div className="flex items-center gap-2 text-[var(--accent-primary)] font-bold text-xl tracking-tight">
-          <div className="w-8 h-8 rounded-lg bg-[var(--accent-primary)] flex items-center justify-center text-white">
-            M
-          </div>
-          MedVision <span className="text-purple-400 font-mono text-sm ml-1">AI</span>
+          <img src="/favicon.png" alt="Nexovision Logo" className="w-8 h-8 rounded-lg object-contain bg-white/5 p-1" />
+          Nexovision <span className="text-purple-400 font-mono text-sm ml-1">AI</span>
         </div>
       </div>
 

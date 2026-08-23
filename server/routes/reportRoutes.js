@@ -12,14 +12,14 @@ const router = express.Router();
 router.use(protect);
 
 router.route('/')
-  .get(authorize('doctor', 'admin'), getReports);
+  .get(authorize('doctor', 'admin', 'clinic_admin'), getReports);
 
 router.route('/:id')
   .get(getReport)
-  .delete(authorize('doctor', 'admin'), require('../controllers/reportController').deleteReport);
+  .delete(authorize('doctor', 'admin', 'clinic_admin'), require('../controllers/reportController').deleteReport);
 
-router.put('/:id/review', authorize('doctor'), reviewReport);
-router.put('/:id/finalize', authorize('doctor'), finalizeReport);
+router.put('/:id/review', authorize('doctor', 'clinic_admin'), reviewReport);
+router.put('/:id/finalize', authorize('doctor', 'clinic_admin'), finalizeReport);
 router.get('/:id/pdf', require('../controllers/reportController').downloadPdf);
 
 module.exports = router;

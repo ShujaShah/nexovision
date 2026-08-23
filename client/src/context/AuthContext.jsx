@@ -55,6 +55,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const registerClinic = async (clinicData) => {
+    try {
+      setLoading(true);
+      const res = await api.post('/auth/register-clinic', clinicData);
+      
+      if (res.data?.data) {
+        localStorage.setItem('user', JSON.stringify(res.data.data));
+        setUser(res.data.data);
+        setError(null);
+        return true;
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Clinic registration failed');
+      throw err; // throw to be caught by the component
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('user');
     setUser(null);
@@ -68,6 +87,7 @@ export const AuthProvider = ({ children }) => {
         error,
         login,
         register,
+        registerClinic,
         logout,
       }}
     >
