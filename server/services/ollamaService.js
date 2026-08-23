@@ -37,12 +37,14 @@ const imageToBase64 = (filePath) => {
 /**
  * Prompts MedGemma with an image and medical context
  */
-exports.analyzeMedicalImage = async (filePath, imageType, bodyPart, clinicalContext = '') => {
+exports.analyzeMedicalImage = async (filePaths, imageType, bodyPart, clinicalContext = '') => {
   try {
-    const base64Image = imageToBase64(filePath);
+    // Make sure we have an array
+    const paths = Array.isArray(filePaths) ? filePaths : [filePaths];
+    const base64Images = paths.map(filePath => imageToBase64(filePath));
     
     const prompt = `You are an expert AI radiologist assistant powered by MedGemma.
-Please analyze this ${imageType} of the ${bodyPart}. 
+Please analyze this ${imageType} study of the ${bodyPart} containing ${paths.length} image(s). 
 ${clinicalContext ? `Clinical context: ${clinicalContext}` : ''}
 
 Provide a structured report with the following sections EXACTLY as formatted below. Do not deviate from this format.
@@ -62,7 +64,7 @@ DIFFERENTIAL DIAGNOSIS:
 - [Diagnosis 1]
 - [Diagnosis 2]`;
 
-    console.log(`Sending request to Ollama (${OLLAMA_MODEL})...`);
+    console.log(`Sending request to Ollama (${OLLAMA_MODEL}) with ${paths.length} images...`);
     
     const response = await axios.post(`${OLLAMA_BASE_URL}/api/chat`, {
       model: OLLAMA_MODEL,
@@ -70,7 +72,7 @@ DIFFERENTIAL DIAGNOSIS:
         {
           role: 'user',
           content: prompt,
-          images: [base64Image]
+          images: base64Images
         }
       ],
       stream: false,

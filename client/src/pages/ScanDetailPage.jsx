@@ -106,7 +106,14 @@ const ScanDetailPage = () => {
 
   if (!scan) return <div className="text-white">Scan not found</div>;
 
-  const imageUrl = scan.filePath.startsWith('http') ? scan.filePath : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${scan.filePath}`;
+  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+  
+  let scanUrls = [];
+  if (scan.files && scan.files.length > 0) {
+    scanUrls = scan.files.map(f => f.filePath.startsWith('http') ? f.filePath : `${baseUrl}${f.filePath}`);
+  } else if (scan.filePath) {
+    scanUrls = [scan.filePath.startsWith('http') ? scan.filePath : `${baseUrl}${scan.filePath}`];
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
@@ -171,7 +178,7 @@ const ScanDetailPage = () => {
         
         {/* Left Side - Viewer (60%) */}
         <div className="w-3/5 flex flex-col h-full">
-          <ScanViewer scanUrl={imageUrl} type={scan.imageType} />
+          <ScanViewer scanUrls={scanUrls} type={scan.imageType} />
         </div>
 
         {/* Right Side - Analysis Panel (40%) */}

@@ -8,33 +8,45 @@ const UploadScanPage = () => {
 
 
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
   const navigate = useNavigate();
 
-  const handleUpload = async (formData) => {
+  const handleUpload = async (uploadData) => {
     try {
       setUploading(true);
-      toast.loading('Uploading scan...', { id: 'upload' });
+      const { files, patientId, imageType, bodyPart, clinicalContext } = uploadData;
       
+      setUploadProgress(`Uploading ${files.length} file${files.length !== 1 ? 's' : ''}...`);
+      
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append('images', file);
+      });
+      formData.append('patientId', patientId);
+      formData.append('imageType', imageType);
+      formData.append('bodyPart', bodyPart);
+      if (clinicalContext) {
+        formData.append('clinicalContext', clinicalContext);
+      }
+
       const res = await api.post('/scans/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-
-      toast.success('Scan uploaded successfully!', { id: 'upload' });
       
-      // Auto-trigger analysis (fire and forget)
+      toast.success('Study uploaded successfully!', { id: 'upload' });
+      
       const scanId = res.data.data._id;
-      
       api.post(`/scans/${scanId}/analyze`).catch(err => {
          console.error('Analysis trigger failed', err);
       });
-      
-      // We navigate to the scan detail page, where the analysis progress will be shown
+
       navigate(`/scans/${scanId}`);
       
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Upload failed', { id: 'upload' });
+      toast.error('An unexpected error occurred during upload', { id: 'upload' });
     } finally {
       setUploading(false);
+      setUploadProgress('');
     }
   };
 
@@ -44,7 +56,7 @@ const UploadScanPage = () => {
         <div className="absolute inset-0 z-50 bg-[var(--bg-primary)]/50 backdrop-blur-sm flex items-center justify-center rounded-xl">
           <div className="glass-panel p-8 flex flex-col items-center">
             <div className="w-12 h-12 border-4 border-blue-500/30 border-t-[var(--accent-primary)] rounded-full animate-spin mb-4"></div>
-            <p className="text-white font-medium">Processing Upload...</p>
+            <p className="text-white font-medium">{uploadProgress || 'Processing Upload...'}</p>
           </div>
         </div>
       )}

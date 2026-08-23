@@ -11,7 +11,7 @@ router.use(authorize('doctor', 'admin', 'clinic_admin'));
 router.route('/')
   .get(getScans);
 
-router.post('/upload', authorize('doctor', 'clinic_admin'), upload.single('image'), uploadScan);
+router.post('/upload', authorize('doctor', 'clinic_admin'), upload.array('images', 20), uploadScan);
 
 router.route('/:id')
   .get(getScan)

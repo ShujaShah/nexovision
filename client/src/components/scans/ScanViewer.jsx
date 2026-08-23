@@ -1,13 +1,18 @@
 import { useState, useRef } from 'react';
 import { ZoomIn, ZoomOut, Maximize, RotateCcw } from 'lucide-react';
 
-const ScanViewer = ({ scanUrl, type }) => {
+const ScanViewer = ({ scanUrls, type }) => {
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [currentIndex, setCurrentIndex] = useState(0);
   
   const containerRef = useRef(null);
+
+  // If scanUrls is a string, convert to array for consistent handling
+  const urls = Array.isArray(scanUrls) ? scanUrls : [scanUrls];
+  const currentUrl = urls[currentIndex];
 
   const handleZoomIn = () => setScale(prev => Math.min(prev + 0.25, 4));
   const handleZoomOut = () => setScale(prev => Math.max(prev - 0.25, 0.5));
@@ -40,6 +45,11 @@ const ScanViewer = ({ scanUrl, type }) => {
         <div className="flex items-center gap-3">
           <span className="badge badge-primary uppercase">{type}</span>
           <span className="text-xs text-[var(--text-secondary)]">Zoom: {Math.round(scale * 100)}%</span>
+          {urls.length > 1 && (
+            <span className="text-xs text-[var(--text-secondary)] border-l border-[var(--border-color)] pl-3">
+              Image {currentIndex + 1} of {urls.length}
+            </span>
+          )}
         </div>
         
         <div className="flex gap-1">
@@ -78,13 +88,33 @@ const ScanViewer = ({ scanUrl, type }) => {
           className="relative"
         >
           <img 
-            src={scanUrl} 
+            src={currentUrl} 
             alt="Medical Scan" 
             className="max-w-full max-h-[800px] object-contain pointer-events-none"
             draggable={false}
           />
         </div>
       </div>
+
+      {/* Thumbnail Bar for Multiple Images */}
+      {urls.length > 1 && (
+        <div className="flex gap-2 p-2 bg-[var(--bg-elevated)] border-t border-[var(--border-color)] overflow-x-auto min-h-[80px]">
+          {urls.map((url, idx) => (
+            <button
+              key={idx}
+              onClick={() => {
+                setCurrentIndex(idx);
+                handleReset();
+              }}
+              className={`relative flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border-2 transition-colors ${
+                currentIndex === idx ? 'border-[var(--accent-primary)]' : 'border-transparent hover:border-gray-500'
+              }`}
+            >
+              <img src={url} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

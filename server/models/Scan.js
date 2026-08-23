@@ -28,23 +28,26 @@ const scanSchema = new mongoose.Schema(
     },
     originalFilename: {
       type: String,
-      required: true,
+      required: false, // For backward compatibility
     },
     filePath: {
       type: String,
-      required: true,
-    },
-    thumbnailPath: {
-      type: String,
+      required: false,
     },
     fileSize: {
       type: Number,
-      required: true,
+      required: false,
     },
     mimeType: {
       type: String,
-      required: true,
+      required: false,
     },
+    files: [{
+      originalFilename: String,
+      filePath: String,
+      fileSize: Number,
+      mimeType: String
+    }],
     status: {
       type: String,
       enum: ['pending', 'analyzing', 'completed', 'failed'],

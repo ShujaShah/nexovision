@@ -71,8 +71,15 @@ exports.deleteScan = async (req, res, next) => {
       return res.status(403).json({ success: false, message: 'Not authorized to delete this scan' });
     }
 
-    // Delete associated physical image file
-    if (scan.filePath) {
+    // Delete associated physical image files
+    if (scan.files && scan.files.length > 0) {
+      scan.files.forEach(f => {
+        const fullPath = path.join(__dirname, '..', '..', f.filePath);
+        if (fs.existsSync(fullPath)) {
+          fs.unlinkSync(fullPath);
+        }
+      });
+    } else if (scan.filePath) {
       const fullPath = path.join(__dirname, '..', '..', scan.filePath);
       if (fs.existsSync(fullPath)) {
         fs.unlinkSync(fullPath);
@@ -104,27 +111,31 @@ exports.deleteScan = async (req, res, next) => {
 // @access  Private (Doctor)
 exports.uploadScan = async (req, res, next) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'Please upload a file' });
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ success: false, message: 'Please upload at least one file' });
     }
 
     const { patientId, imageType, bodyPart } = req.body;
 
     if (!patientId || !imageType || !bodyPart) {
-      // Remove uploaded file if validation fails
-      fs.unlinkSync(req.file.path);
+      // Remove uploaded files if validation fails
+      req.files.forEach(file => fs.unlinkSync(file.path));
       return res.status(400).json({ success: false, message: 'Please provide patientId, imageType, and bodyPart' });
     }
+
+    const files = req.files.map(file => ({
+      originalFilename: file.originalname,
+      filePath: `/uploads/images/${file.filename}`,
+      fileSize: file.size,
+      mimeType: file.mimetype
+    }));
 
     const scan = await Scan.create({
       patient: patientId,
       uploadedBy: req.user.id,
       imageType,
       bodyPart,
-      originalFilename: req.file.originalname,
-      filePath: `/uploads/images/${req.file.filename}`, // Assuming express static serves this
-      fileSize: req.file.size,
-      mimeType: req.file.mimetype,
+      files: files,
       status: 'pending',
       clinic: req.user.clinic,
     });
@@ -195,9 +206,13 @@ exports.analyzeScan = async (req, res, next) => {
       return res.status(503).json({ success: false, message: 'Ollama service is unavailable' });
     }
 
-    // Run analysis
+    // Pass array of files for analysis
+    const filePaths = scan.files && scan.files.length > 0 
+      ? scan.files.map(f => f.filePath)
+      : [scan.filePath];
+
     const analysis = await ollamaService.analyzeMedicalImage(
-      scan.filePath, 
+      filePaths, 
       scan.imageType, 
       scan.bodyPart,
       req.body?.clinicalContext || ''

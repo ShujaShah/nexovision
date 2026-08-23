@@ -4,19 +4,19 @@ import { UploadCloud, X, File, AlertCircle } from 'lucide-react';
 import SearchableSelect from '../common/SearchableSelect';
 
 const ScanUpload = ({ onUpload }) => {
-  const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
+  const [files, setFiles] = useState([]);
   const [patientId, setPatientId] = useState('');
   const [imageType, setImageType] = useState('xray');
   const [bodyPart, setBodyPart] = useState('');
   const [clinicalContext, setClinicalContext] = useState('');
 
   const onDrop = useCallback((acceptedFiles) => {
-    const selectedFile = acceptedFiles[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      const objectUrl = URL.createObjectURL(selectedFile);
-      setPreview(objectUrl);
+    if (acceptedFiles.length > 0) {
+      const newFiles = acceptedFiles.map(file => ({
+        file,
+        preview: URL.createObjectURL(file)
+      }));
+      setFiles(prev => [...prev, ...newFiles]);
     }
   }, []);
 
@@ -27,32 +27,29 @@ const ScanUpload = ({ onUpload }) => {
       'image/png': [],
       'application/dicom': []
     },
-    maxFiles: 1,
     maxSize: 50000000 // 50MB
   });
 
-  const clearFile = () => {
-    setFile(null);
-    if (preview) {
-      URL.revokeObjectURL(preview);
-      setPreview(null);
-    }
+  const removeFile = (indexToRemove) => {
+    setFiles(prev => {
+      const newFiles = [...prev];
+      URL.revokeObjectURL(newFiles[indexToRemove].preview);
+      newFiles.splice(indexToRemove, 1);
+      return newFiles;
+    });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!file || !patientId || !bodyPart) return;
+    if (files.length === 0 || !patientId || !bodyPart) return;
     
-    const formData = new FormData();
-    formData.append('image', file);
-    formData.append('patientId', patientId);
-    formData.append('imageType', imageType);
-    formData.append('bodyPart', bodyPart);
-    if (clinicalContext) {
-      formData.append('clinicalContext', clinicalContext);
-    }
-
-    onUpload(formData);
+    onUpload({ 
+      files: files.map(f => f.file), 
+      patientId, 
+      imageType, 
+      bodyPart, 
+      clinicalContext 
+    });
   };
 
   return (
@@ -119,55 +116,46 @@ const ScanUpload = ({ onUpload }) => {
 
         {/* Right Column - File Upload */}
         <div>
-          <label className="label-text mb-2 block">Image File</label>
+          <label className="label-text mb-2 block">Image Files ({files.length} selected)</label>
           
-          {!file ? (
-            <div 
-              {...getRootProps()} 
-              className={`border-2 border-dashed rounded-xl h-[300px] flex flex-col items-center justify-center p-6 text-center cursor-pointer transition-all duration-200
-                ${isDragActive ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/5' : 'border-[var(--border-color)] hover:border-[var(--text-muted)] hover:bg-[var(--bg-elevated)]'}
-              `}
-            >
-              <input {...getInputProps()} />
-              <div className="w-16 h-16 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center text-[var(--text-secondary)] mb-4">
-                <UploadCloud size={32} />
-              </div>
-              <p className="text-white font-medium mb-1">Drag & drop your file here</p>
-              <p className="text-[var(--text-secondary)] text-sm mb-4">or click to browse from your computer</p>
-              <div className="flex gap-2">
-                <span className="badge">JPEG</span>
-                <span className="badge">PNG</span>
-                <span className="badge">DICOM</span>
-              </div>
-              <p className="text-[var(--text-muted)] text-xs mt-4">Max file size: 50MB</p>
+          <div 
+            {...getRootProps()} 
+            className={`border-2 border-dashed rounded-xl flex flex-col items-center justify-center p-6 text-center cursor-pointer transition-all duration-200 mb-4
+              ${isDragActive ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/5' : 'border-[var(--border-color)] hover:border-[var(--text-muted)] hover:bg-[var(--bg-elevated)]'}
+              ${files.length > 0 ? 'h-auto py-6' : 'h-[300px]'}
+            `}
+          >
+            <input {...getInputProps()} />
+            <div className="w-12 h-12 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center text-[var(--text-secondary)] mb-3">
+              <UploadCloud size={24} />
             </div>
-          ) : (
-            <div className="border border-[var(--border-color)] rounded-xl overflow-hidden bg-[var(--bg-secondary)] relative h-[300px] flex flex-col">
-              <button 
-                type="button"
-                onClick={clearFile}
-                className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-500/80 text-white rounded-lg transition-colors z-10 backdrop-blur-sm"
-              >
-                <X size={16} />
-              </button>
-              
-              <div className="flex-1 bg-black/40 flex items-center justify-center p-2 overflow-hidden">
-                {file.type.includes('image') ? (
-                  <img src={preview} alt="Preview" className="max-w-full max-h-full object-contain" />
-                ) : (
-                  <div className="flex flex-col items-center text-[var(--text-secondary)]">
-                    <File size={48} className="mb-2 opacity-50" />
-                    <span>DICOM File Selected</span>
+            <p className="text-white font-medium mb-1">Drag & drop files here</p>
+            <p className="text-[var(--text-secondary)] text-sm">or click to browse</p>
+          </div>
+          
+          {files.length > 0 && (
+            <div className="grid grid-cols-2 gap-3 max-h-[300px] overflow-y-auto pr-2">
+              {files.map((item, index) => (
+                <div key={index} className="border border-[var(--border-color)] rounded-xl overflow-hidden bg-[var(--bg-secondary)] relative h-[120px] flex flex-col">
+                  <button 
+                    type="button"
+                    onClick={() => removeFile(index)}
+                    className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-red-500/80 text-white rounded-md transition-colors z-10 backdrop-blur-sm"
+                  >
+                    <X size={14} />
+                  </button>
+                  <div className="flex-1 bg-black/40 flex items-center justify-center overflow-hidden">
+                    {item.file.type.includes('image') ? (
+                      <img src={item.preview} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <File size={24} className="opacity-50 text-[var(--text-secondary)]" />
+                    )}
                   </div>
-                )}
-              </div>
-              
-              <div className="p-3 border-t border-[var(--border-color)] bg-[var(--bg-elevated)] text-sm flex justify-between items-center">
-                <span className="truncate pr-4 text-[var(--text-primary)]">{file.name}</span>
-                <span className="text-[var(--text-secondary)] whitespace-nowrap">
-                  {(file.size / (1024 * 1024)).toFixed(2)} MB
-                </span>
-              </div>
+                  <div className="p-2 border-t border-[var(--border-color)] bg-[var(--bg-elevated)] text-xs truncate text-[var(--text-primary)]">
+                    {item.file.name}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
@@ -182,10 +170,10 @@ const ScanUpload = ({ onUpload }) => {
           <button 
             type="submit" 
             className="btn-primary w-full md:w-auto px-8 py-3 text-base flex items-center justify-center gap-2"
-            disabled={!file || !patientId || !bodyPart}
+            disabled={files.length === 0 || !patientId || !bodyPart}
           >
             <UploadCloud size={20} />
-            Upload and Analyze
+            Upload {files.length > 0 ? files.length : ''} File{files.length !== 1 ? 's' : ''}
           </button>
         </div>
       </form>
