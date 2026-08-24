@@ -59,7 +59,7 @@ const DashboardPage = () => {
         {/* Recent Activity */}
         <div className="lg:col-span-2 glass-panel p-6 flex flex-col h-[400px]">
           <div className="flex justify-between items-center mb-6 border-b border-[var(--border-color)] pb-3">
-            <h2 className="text-xl font-semibold text-white">Recent AI Analyses</h2>
+            <h2 className="text-xl font-semibold text-white">Recent AI Analysis</h2>
             <Link to="/scans" className="text-sm text-[var(--accent-primary)] hover:text-white transition-colors flex items-center gap-1">
               View all <ArrowRight size={14} />
             </Link>
@@ -74,8 +74,16 @@ const DashboardPage = () => {
                   className="flex items-center justify-between p-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] hover:border-white/20 transition-all group"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-black/50 border border-[var(--border-color)] flex items-center justify-center text-[var(--text-secondary)]">
-                      <ImageIcon size={18} />
+                    <div className="w-10 h-10 rounded-lg bg-black/50 border border-[var(--border-color)] flex items-center justify-center overflow-hidden">
+                      {(activity.files?.[0]?.filePath || activity.filePath) ? (
+                        <img 
+                          src={`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${activity.files?.[0]?.filePath || activity.filePath}`} 
+                          alt="Thumbnail" 
+                          className="w-full h-full object-cover opacity-80"
+                        />
+                      ) : (
+                        <ImageIcon size={18} className="text-[var(--text-secondary)]" />
+                      )}
                     </div>
                     <div>
                       <p className="text-white font-medium flex items-center gap-2 group-hover:text-[var(--accent-primary)] transition-colors">

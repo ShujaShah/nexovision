@@ -24,7 +24,7 @@ exports.getStats = async (req, res, next) => {
       .sort('-createdAt')
       .limit(5)
       .populate('patient', 'firstName lastName')
-      .select('imageType bodyPart status createdAt patient');
+      .select('imageType bodyPart status createdAt patient files filePath');
 
     // Get scan type distribution for charts
     const scanTypes = await Scan.aggregate([
