@@ -1,18 +1,14 @@
 import { useState, useEffect, useContext } from 'react';
-import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
+import { useClinic, useUpdateClinic, useDoctors, useAddDoctor, useUpdateDoctor, useDeleteDoctor } from '../hooks/api/useClinic';
 import { Building2, Mail, Phone, MapPin, UserPlus, Save, Loader2, Users, Edit2, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 
 const ClinicSettingsPage = () => {
   const { user } = useContext(AuthContext);
-  const [clinic, setClinic] = useState(null);
-  const [doctors, setDoctors] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [clinicForm, setClinicForm] = useState(null);
   const [saving, setSaving] = useState(false);
-  
-  // New doctor form state
   const [isAddingDoctor, setIsAddingDoctor] = useState(false);
   const [newDoctor, setNewDoctor] = useState({
     name: '',
@@ -22,42 +18,35 @@ const ClinicSettingsPage = () => {
     licenseNumber: ''
   });
 
-  // Edit doctor form state
   const [editingDoctorId, setEditingDoctorId] = useState(null);
   const [editDoctorData, setEditDoctorData] = useState({});
-
-  // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [doctorToDelete, setDoctorToDelete] = useState(null);
+  const { data: clinicData, isLoading: loadingClinic } = useClinic();
+  const { data: doctorsData, isLoading: loadingDoctors } = useDoctors();
+  const updateClinicMutation = useUpdateClinic();
+  const addDoctorMutation = useAddDoctor();
+  const updateDoctorMutation = useUpdateDoctor();
+  const deleteDoctorMutation = useDeleteDoctor();
 
-  const fetchData = async () => {
-    try {
-      const [clinicRes, doctorsRes] = await Promise.all([
-        api.get('/clinics/me'),
-        api.get('/clinics/doctors')
-      ]);
-      setClinic(clinicRes.data.data);
-      setDoctors(doctorsRes.data.data);
-    } catch (err) {
-      toast.error('Failed to load clinic data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loading = loadingClinic || loadingDoctors;
+  const doctors = doctorsData || [];
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (clinicData) {
+      setClinicForm(clinicData);
+    }
+  }, [clinicData]);
 
   const handleClinicChange = (e) => {
-    setClinic({ ...clinic, [e.target.name]: e.target.value });
+    setClinicForm({ ...clinicForm, [e.target.name]: e.target.value });
   };
 
   const handleSaveClinic = async (e) => {
     e.preventDefault();
     try {
       setSaving(true);
-      await api.put('/clinics/me', clinic);
+      await updateClinicMutation.mutateAsync(clinicForm);
       toast.success('Clinic profile updated');
     } catch (err) {
       toast.error('Failed to update clinic');
@@ -74,11 +63,10 @@ const ClinicSettingsPage = () => {
     e.preventDefault();
     try {
       setSaving(true);
-      await api.post('/clinics/doctors', newDoctor);
+      await addDoctorMutation.mutateAsync(newDoctor);
       toast.success('Doctor added successfully');
       setIsAddingDoctor(false);
       setNewDoctor({ name: '', email: '', password: '', specialization: '', licenseNumber: '' });
-      fetchData(); // Refresh list
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to add doctor');
     } finally {
@@ -113,10 +101,9 @@ const ClinicSettingsPage = () => {
       const payload = { ...editDoctorData };
       if (!payload.password) delete payload.password; // Don't send empty password
 
-      await api.put(`/clinics/doctors/${id}`, payload);
+      await updateDoctorMutation.mutateAsync({ id, data: payload });
       toast.success('Doctor updated successfully');
       setEditingDoctorId(null);
-      fetchData();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update doctor');
     } finally {
@@ -128,14 +115,14 @@ const ClinicSettingsPage = () => {
     if (!doctorToDelete) return;
     try {
       setSaving(true);
-      await api.delete(`/clinics/doctors/${doctorToDelete}`);
+      await deleteDoctorMutation.mutateAsync(doctorToDelete);
       toast.success('Doctor removed');
-      fetchData();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to delete doctor');
     } finally {
       setSaving(false);
       setDoctorToDelete(null);
+      setIsModalOpen(false);
     }
   };
 
@@ -170,7 +157,7 @@ const ClinicSettingsPage = () => {
                 <input
                   type="text"
                   name="name"
-                  value={clinic?.name || ''}
+                  value={clinicForm?.name || ''}
                   onChange={handleClinicChange}
                   className="input-field"
                   required
@@ -184,7 +171,7 @@ const ClinicSettingsPage = () => {
                   <input
                     type="text"
                     name="address"
-                    value={clinic?.address || ''}
+                    value={clinicForm?.address || ''}
                     onChange={handleClinicChange}
                     className="input-field pl-9"
                     required
@@ -199,7 +186,7 @@ const ClinicSettingsPage = () => {
                   <input
                     type="email"
                     name="contactEmail"
-                    value={clinic?.contactEmail || ''}
+                    value={clinicForm?.contactEmail || ''}
                     onChange={handleClinicChange}
                     className="input-field pl-9"
                     required
@@ -214,7 +201,7 @@ const ClinicSettingsPage = () => {
                   <input
                     type="text"
                     name="contactPhone"
-                    value={clinic?.contactPhone || ''}
+                    value={clinicForm?.contactPhone || ''}
                     onChange={handleClinicChange}
                     className="input-field pl-9"
                     required

@@ -41,61 +41,56 @@ docker-compose --profile dev up -d
 
 ## Useful Docker Commands
 
-Here is a list of commonly used Docker commands for managing the Nexovision project. 
+Here is a list of Docker commands specifically tailored to isolate and manage **only this Nexovision project**, preventing interference with other Docker projects you might have running.
 
 *Note: Replace `--profile dev` with `--profile full` depending on which environment you are running.*
 
 ### Start Project
-Start all containers in the background:
+Start all Nexovision containers in the background, explicitly defining the project name (`-p nexovision`):
 ```bash
-docker-compose --profile dev up -d
+docker-compose -p nexovision --profile dev up -d
 ```
 
 ### Stop Project
-Stop all running containers without destroying data:
+Stop all running Nexovision containers without destroying data:
 ```bash
-docker-compose --profile dev stop
+docker-compose -p nexovision --profile dev stop
 ```
 
 ### Shut Down Project
-Stop and remove all containers, networks, and unused volumes (this will not delete your database volume unless specified):
+Stop and remove all Nexovision containers, networks, and unused volumes:
 ```bash
-docker-compose --profile dev down
-```
-
-### Restart Project
-Restart all running containers:
-```bash
-docker-compose --profile dev restart
+docker-compose -p nexovision --profile dev down
 ```
 
 ### Restart a Specific Service
-Restart just the backend server (or `client`, `mongodb`, `ollama`):
+To restart just the frontend or backend without affecting your other Docker containers, target them by their exact container names:
 ```bash
-docker-compose --profile dev restart server
-```
+# Restart the React frontend
+docker restart nexovision-client
 
-### View Logs
-View the live logs for all running services:
-```bash
-docker-compose --profile dev logs -f
+# Restart the Express backend
+docker restart nexovision-server
 ```
 
 ### View Logs for a Specific Service
-View live logs for just the backend server:
+View live logs for just the frontend or backend using their specific container names:
 ```bash
-docker-compose --profile dev logs -f server
+# View logs for the frontend
+docker logs -f nexovision-client
+
+# View logs for the backend
+docker logs -f nexovision-server
 ```
 
 ### Rebuild Containers
-If you install new npm packages or change the `Dockerfile`, you need to rebuild the images:
+If you install new npm packages or change a `Dockerfile`, rebuild the images for this specific project:
 ```bash
-docker-compose --profile dev up -d --build
+docker-compose -p nexovision --profile dev up -d --build
 ```
-*(You can also rebuild a specific service, e.g., `docker-compose --profile dev build client`)*
 
 ### Access a Running Container
-Open an interactive terminal inside the server container:
+Open an interactive terminal inside the server container to run commands:
 ```bash
 docker exec -it nexovision-server /bin/sh
 ```

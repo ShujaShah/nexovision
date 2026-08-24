@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../services/api';
+import { usePatients, useCreatePatient } from '../hooks/api/usePatients';
 import toast from 'react-hot-toast';
 import { Users, Search, Plus, UserPlus, X, Calendar, Phone } from 'lucide-react';
 
@@ -13,12 +13,14 @@ const PatientForm = ({ onClose, onSave }) => {
     contactInfo: { phone: '', email: '', address: '' },
   });
 
+  const createPatientMutation = useCreatePatient();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post('/patients', formData);
+      const res = await createPatientMutation.mutateAsync(formData);
       toast.success('Patient added successfully');
-      onSave(res.data.data);
+      onSave(res.data);
       onClose();
     } catch (err) {
       toast.error('Failed to add patient');
@@ -105,30 +107,15 @@ const PatientForm = ({ onClose, onSave }) => {
 import Pagination from '../components/common/Pagination';
 
 const PatientsPage = () => {
-  const [patients, setPatients] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
-  const fetchPatients = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get(`/patients?page=${page}&limit=10&search=${searchTerm}`);
-      setPatients(res.data.data);
-      setTotalPages(res.data.pages);
-    } catch (error) {
-      toast.error('Failed to load patients');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: patientsData, isLoading: loading } = usePatients(page, searchTerm);
 
-  useEffect(() => {
-    fetchPatients();
-  }, [page, searchTerm]);
+  const patients = patientsData?.data || [];
+  const totalPages = patientsData?.pages || 1;
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -241,8 +228,8 @@ const PatientsPage = () => {
       {showModal && (
         <PatientForm 
           onClose={() => setShowModal(false)} 
-          onSave={(newPatient) => {
-            setPatients(prev => [newPatient, ...prev].slice(0, 10)); // keep only limit
+          onSave={() => {
+            // Refetch is handled by query invalidation in the mutation
           }} 
         />
       )}

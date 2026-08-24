@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import { usePatient } from '../hooks/api/usePatients';
 import toast from 'react-hot-toast';
 import { Calendar, Phone, Mail, MapPin, Activity, FileText, UploadCloud, User, Clock, Image, ArrowLeft } from 'lucide-react';
 import BodyPartIcon from '../components/common/BodyPartIcon';
@@ -8,25 +7,16 @@ import BodyPartIcon from '../components/common/BodyPartIcon';
 const PatientDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [patient, setPatient] = useState(null);
-  const [scans, setScans] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: patientData, isLoading: loading, error } = usePatient(id);
 
-  useEffect(() => {
-    const fetchPatientData = async () => {
-      try {
-        const res = await api.get(`/patients/${id}`);
-        setPatient(res.data.data);
-        setScans(res.data.recentScans || []);
-      } catch (err) {
-        toast.error('Failed to load patient details');
-        navigate('/patients');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPatientData();
-  }, [id, navigate]);
+  if (error) {
+    toast.error('Failed to load patient details');
+    navigate('/patients');
+    return null;
+  }
+
+  const patient = patientData || null;
+  const scans = patientData?.recentScans || [];
 
   if (loading) return <div className="animate-pulse p-8">Loading patient data...</div>;
   if (!patient) return null;

@@ -1,38 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import BodyPartIcon from '../components/common/BodyPartIcon';
-import api from '../services/api';
+import { useReports, useDeleteReport } from '../hooks/api/useReports';
 import toast from 'react-hot-toast';
 import { FileText, Search, ExternalLink, Clock, FileCheck, Trash2, CheckCircle, Eye, Download } from 'lucide-react';
 import Pagination from '../components/common/Pagination';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 
 const ReportsPage = () => {
-  const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [reportToDelete, setReportToDelete] = useState(null);
 
-  const fetchReports = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get(`/reports?page=${page}&limit=10&search=${searchTerm}`);
-      setReports(res.data.data);
-      setTotalPages(res.data.pages);
-    } catch (err) {
-      toast.error('Failed to fetch reports');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: reportsData, isLoading: loading } = useReports(page, searchTerm);
+  const deleteReportMutation = useDeleteReport();
 
-  useEffect(() => {
-    fetchReports();
-  }, [page, searchTerm]);
+  const reports = reportsData?.data || [];
+  const totalPages = reportsData?.pages || 1;
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -43,9 +29,9 @@ const ReportsPage = () => {
   const confirmDelete = async () => {
     if (!reportToDelete) return;
     try {
-      await api.delete(`/reports/${reportToDelete}`);
+      await deleteReportMutation.mutateAsync(reportToDelete);
       toast.success('Report deleted successfully');
-      fetchReports();
+      setIsModalOpen(false);
     } catch (err) {
       toast.error('Failed to delete report');
     } finally {

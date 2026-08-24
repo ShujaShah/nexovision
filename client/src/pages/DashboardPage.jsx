@@ -1,7 +1,7 @@
-import { useState, useEffect, useContext } from 'react';
+import { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import BodyPartIcon from '../components/common/BodyPartIcon';
-import api from '../services/api';
+import { useDashboardStats } from '../hooks/api/useDashboard';
 import { AuthContext } from '../context/AuthContext';
 import { Users, Image as ImageIcon, FileText, CheckCircle, BrainCircuit, ArrowRight } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
@@ -10,24 +10,9 @@ const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'];
 
 const DashboardPage = () => {
   const { user } = useContext(AuthContext);
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useDashboardStats();
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        const res = await api.get('/dashboard/stats');
-        setData(res.data.data);
-      } catch (error) {
-        console.error('Failed to load dashboard data', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchDashboardData();
-  }, []);
-
-  if (loading || !data) {
+  if (isLoading || !data) {
     return <div className="animate-pulse space-y-6 p-4">Loading dashboard...</div>;
   }
 

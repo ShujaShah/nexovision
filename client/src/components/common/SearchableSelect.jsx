@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, Check } from 'lucide-react';
-import api from '../../services/api';
+import { usePatients, usePatient } from '../../hooks/api/usePatients';
 
 const SearchableSelect = ({ value, onChange, placeholder = "Select a patient..." }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,46 +25,44 @@ const SearchableSelect = ({ value, onChange, placeholder = "Select a patient..."
   }, []);
 
   // Fetch initial option if value is set but selectedOption is null
+  const { data: patientData } = usePatient(value);
   useEffect(() => {
-    if (value && !selectedOption) {
-      const fetchSelected = async () => {
-        try {
-          const res = await api.get(`/patients/${value}`);
-          setSelectedOption(res.data.data);
-        } catch (err) {
-          console.error("Failed to fetch selected patient", err);
-        }
-      };
-      fetchSelected();
+    if (value && !selectedOption && patientData) {
+      setSelectedOption(patientData);
     }
-  }, [value]);
+  }, [value, selectedOption, patientData]);
 
-  // Fetch options when search or page changes
+  // Debounced search term
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   useEffect(() => {
-    const fetchOptions = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get(`/patients?page=${page}&limit=10&search=${searchTerm}`);
-        if (page === 1) {
-          setOptions(res.data.data);
-        } else {
-          setOptions(prev => [...prev, ...res.data.data]);
-        }
-        setHasMore(page < res.data.pages);
-      } catch (err) {
-        console.error("Failed to fetch patients", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    // Debounce search
     const timer = setTimeout(() => {
-      fetchOptions();
+      setDebouncedSearch(searchTerm);
     }, 300);
-    
     return () => clearTimeout(timer);
-  }, [searchTerm, page]);
+  }, [searchTerm]);
+
+  const { data: patientsData, isLoading: loadingPatients } = usePatients(page, debouncedSearch);
+
+  // Update options when data changes
+  useEffect(() => {
+    if (patientsData) {
+      if (page === 1) {
+        setOptions(patientsData.data);
+      } else {
+        setOptions(prev => {
+          // Avoid duplicates on strict mode double render
+          const existingIds = new Set(prev.map(p => p._id));
+          const newOptions = patientsData.data.filter(p => !existingIds.has(p._id));
+          return [...prev, ...newOptions];
+        });
+      }
+      setHasMore(page < patientsData.pages);
+    }
+  }, [patientsData, page]);
+
+  useEffect(() => {
+    setLoading(loadingPatients);
+  }, [loadingPatients]);
 
   const handleSearchChange = (e) => {
     setSearchTerm(e.target.value);

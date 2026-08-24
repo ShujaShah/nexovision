@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import { useUploadScan, useAnalyzeScan } from '../hooks/api/useScans';
+import { useQueryClient } from '@tanstack/react-query';
 import ScanUpload from '../components/scans/ScanUpload';
 import toast from 'react-hot-toast';
 
 const UploadScanPage = () => {
-
-
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const uploadScanMutation = useUploadScan();
+  const analyzeScanMutation = useAnalyzeScan();
 
   const handleUpload = async (uploadData) => {
     try {
@@ -29,14 +31,16 @@ const UploadScanPage = () => {
         formData.append('clinicalContext', clinicalContext);
       }
 
-      const res = await api.post('/scans/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const res = await uploadScanMutation.mutateAsync(formData);
       
       toast.success('Study uploaded successfully!', { id: 'upload' });
       
-      const scanId = res.data.data._id;
-      api.post(`/scans/${scanId}/analyze`).catch(err => {
+      const scanId = res.data._id;
+      
+      // Optimistically seed the cache so the detail page knows it's analyzing!
+      queryClient.setQueryData(['scan', scanId], { ...res.data, status: 'analyzing' });
+
+      analyzeScanMutation.mutateAsync(scanId).catch(err => {
          console.error('Analysis trigger failed', err);
       });
 

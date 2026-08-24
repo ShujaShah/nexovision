@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import { useScan, useAnalyzeScan } from '../hooks/api/useScans';
+import { useReportsAll, useReviewReport, useFinalizeReport } from '../hooks/api/useReports';
 import ScanViewer from '../components/scans/ScanViewer';
 import BodyPartIcon from '../components/common/BodyPartIcon';
 import FindingsPanel from '../components/reports/FindingsPanel';
@@ -10,89 +11,60 @@ import { BrainCircuit, FileCheck, FileWarning, ArrowLeft, Loader2, Save } from '
 const ScanDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  
-  const [scan, setScan] = useState(null);
-  const [report, setReport] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [doctorNotes, setDoctorNotes] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
+
+  const { data: scanData, isLoading: loadingScan } = useScan(id, {
+    refetchInterval: (data) => (data?.status === 'analyzing' ? 5000 : false),
+    staleTime: 10000 // Keep the optimistic cache from UploadScanPage fresh for 10s!
+  });
+
+  const { data: allReports, isLoading: loadingReports } = useReportsAll();
+
+  const analyzeScanMutation = useAnalyzeScan();
+  const reviewReportMutation = useReviewReport();
+  const finalizeReportMutation = useFinalizeReport();
+
+  const scan = scanData || null;
+  const loading = loadingScan || loadingReports;
+  const isSaving = reviewReportMutation.isPending || finalizeReportMutation.isPending;
+
+  // Find the matched report for this scan
+  const report = allReports?.find(r => r.scan?._id === id || r.scan === id) || null;
 
   useEffect(() => {
-    let pollingInterval;
-
-    const fetchData = async () => {
-      try {
-        const scanRes = await api.get(`/scans/${id}`);
-        setScan(scanRes.data.data);
-
-        // If scan is completed, try to fetch its report
-        if (scanRes.data.data.status === 'completed') {
-          const reportsRes = await api.get('/reports'); // Should ideally have a /reports/scan/:scanId endpoint, but filtering client side for MVP
-          const matchedReport = reportsRes.data.data.find(r => r.scan._id === id || r.scan === id);
-          if (matchedReport) {
-            // Fetch full report details
-            const reportDetail = await api.get(`/reports/${matchedReport._id}`);
-            setReport(reportDetail.data.data);
-            setDoctorNotes(reportDetail.data.data.doctorNotes || '');
-          }
-        }
-      } catch (err) {
-        toast.error('Failed to load scan details');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-
-    // Setup polling if status is 'analyzing'
-    if (scan?.status === 'analyzing') {
-      pollingInterval = setInterval(fetchData, 5000); // Poll every 5s
+    if (report && report.doctorNotes) {
+      setDoctorNotes(report.doctorNotes);
     }
-
-    return () => {
-      if (pollingInterval) clearInterval(pollingInterval);
-    };
-  }, [id, scan?.status]);
+  }, [report]);
 
   const handleSaveNotes = async () => {
     if (!report) return;
     try {
-      setIsSaving(true);
-      await api.put(`/reports/${report._id}/review`, { doctorNotes });
+      await reviewReportMutation.mutateAsync({ id: report._id, doctorNotes });
       toast.success('Notes saved successfully');
     } catch (err) {
       toast.error('Failed to save notes');
-    } finally {
-      setIsSaving(false);
     }
   };
 
   const handleStartAnalysis = async () => {
     if (!scan) return;
     try {
-      setScan(prev => ({ ...prev, status: 'analyzing' }));
       toast.loading('Initializing MedGemma Analysis...', { id: 'analysis' });
-      await api.post(`/scans/${scan._id}/analyze`);
+      await analyzeScanMutation.mutateAsync(scan._id);
       toast.success('Analysis started', { id: 'analysis' });
-      // The polling in useEffect will now take over
     } catch (err) {
       toast.error('Failed to start analysis', { id: 'analysis' });
-      setScan(prev => ({ ...prev, status: 'pending' }));
     }
   };
 
   const handleFinalize = async () => {
     if (!report) return;
     try {
-      setIsSaving(true);
-      await api.put(`/reports/${report._id}/finalize`);
+      await finalizeReportMutation.mutateAsync(report._id);
       toast.success('Report finalized');
-      setReport(prev => ({ ...prev, status: 'finalized' }));
     } catch (err) {
       toast.error('Failed to finalize report');
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -115,6 +87,8 @@ const ScanDetailPage = () => {
     scanUrls = [scan.filePath.startsWith('http') ? scan.filePath : `${baseUrl}${scan.filePath}`];
   }
 
+  const isAnalyzing = scan?.status === 'analyzing';
+
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       {/* Header */}
@@ -128,10 +102,10 @@ const ScanDetailPage = () => {
               <BodyPartIcon bodyPart={scan.bodyPart} size={24} className="text-blue-400" />
               {scan.patient.firstName} {scan.patient.lastName}'s {scan.bodyPart} Scan
               
-              {scan.status === 'completed' && <span className="badge badge-success flex items-center gap-1"><FileCheck size={12}/> Analyzed</span>}
-              {scan.status === 'analyzing' && <span className="badge badge-primary flex items-center gap-1"><BrainCircuit size={12} className="animate-pulse"/> Analyzing</span>}
-              {scan.status === 'failed' && <span className="badge badge-danger flex items-center gap-1"><FileWarning size={12}/> Failed</span>}
-              {scan.status === 'pending' && <span className="badge badge-warning">Pending</span>}
+              {scan.status === 'completed' && !isAnalyzing && <span className="badge badge-success flex items-center gap-1"><FileCheck size={12}/> Analyzed</span>}
+              {isAnalyzing && <span className="badge badge-primary flex items-center gap-1"><BrainCircuit size={12} className="animate-pulse"/> Analyzing</span>}
+              {scan.status === 'failed' && !isAnalyzing && <span className="badge badge-danger flex items-center gap-1"><FileWarning size={12}/> Failed</span>}
+              {scan.status === 'pending' && !isAnalyzing && <span className="badge badge-warning">Pending</span>}
             </h1>
             <p className="text-sm text-[var(--text-secondary)]">
               Uploaded on {new Date(scan.createdAt).toLocaleDateString()} by {scan.uploadedBy.name}
@@ -189,7 +163,7 @@ const ScanDetailPage = () => {
           </div>
 
           <div className="flex-1 overflow-hidden p-4">
-            {scan.status === 'analyzing' ? (
+            {isAnalyzing ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-8">
                 <div className="relative mb-6">
                   <div className="w-16 h-16 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin"></div>

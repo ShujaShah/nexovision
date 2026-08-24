@@ -1,38 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../services/api';
 import toast from 'react-hot-toast';
+import { useScans, useDeleteScan } from '../hooks/api/useScans';
 import { FileImage, BrainCircuit, FileWarning, Search, Eye, Trash2 } from 'lucide-react';
 import Pagination from '../components/common/Pagination';
 import BodyPartIcon from '../components/common/BodyPartIcon';
 import ConfirmationModal from '../components/common/ConfirmationModal';
 
 const ScansPage = () => {
-  const [scans, setScans] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [scanToDelete, setScanToDelete] = useState(null);
 
-  const fetchScans = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get(`/scans?page=${page}&limit=10&search=${searchTerm}`);
-      setScans(res.data.data);
-      setTotalPages(res.data.pages);
-    } catch (err) {
-      toast.error('Failed to fetch scans');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: scansData, isLoading: loading } = useScans(page, searchTerm);
+  const deleteScanMutation = useDeleteScan();
 
-  useEffect(() => {
-    fetchScans();
-  }, [page, searchTerm]);
+  const scans = scansData?.data || [];
+  const totalPages = scansData?.pages || 1;
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -43,9 +29,9 @@ const ScansPage = () => {
   const confirmDelete = async () => {
     if (!scanToDelete) return;
     try {
-      await api.delete(`/scans/${scanToDelete}`);
+      await deleteScanMutation.mutateAsync(scanToDelete);
       toast.success('Scan deleted successfully');
-      fetchScans(); // Refresh list
+      setIsModalOpen(false);
     } catch (err) {
       toast.error('Failed to delete scan');
     } finally {
