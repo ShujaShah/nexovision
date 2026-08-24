@@ -23,17 +23,23 @@ const storage = multer.diskStorage({
 
 // Check file type
 function checkFileType(file, cb) {
-  // Allowed ext
-  const filetypes = /jpeg|jpg|png|dicom|dcm/;
-  // Check ext
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  // Check mime
-  const mimetype = filetypes.test(file.mimetype) || file.mimetype === 'application/dicom';
+  // Check mime type
+  const isImageMime = file.mimetype.startsWith('image/');
+  const isDicomMime = file.mimetype === 'application/dicom' || file.mimetype === 'application/dicom';
+  
+  // Check extension as fallback/additional validation
+  const extname = path.extname(file.originalname).toLowerCase();
+  const imageExtensions = ['.jpeg', '.jpg', '.png', '.gif', '.webp', '.heic', '.heif', '.tiff', '.tif', '.bmp', '.svg'];
+  const dicomExtensions = ['.dicom', '.dcm'];
+  
+  const isImageExt = imageExtensions.includes(extname);
+  const isDicomExt = dicomExtensions.includes(extname);
 
-  if (mimetype && extname) {
+  // Accept if it's an image mime type OR image extension OR dicom mime/extension
+  if (isImageMime || isDicomMime || isImageExt || isDicomExt) {
     return cb(null, true);
   } else {
-    cb(new Error('Images and DICOM files only!'));
+    cb(new Error('Only image formats (jpg, png, webp, heic, etc.) and DICOM files are allowed!'));
   }
 }
 

@@ -23,9 +23,8 @@ const ScanUpload = ({ onUpload }) => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/jpeg': [],
-      'image/png': [],
-      'application/dicom': []
+      'image/*': [],
+      'application/dicom': ['.dcm', '.dicom']
     },
     maxSize: 50000000 // 50MB
   });
