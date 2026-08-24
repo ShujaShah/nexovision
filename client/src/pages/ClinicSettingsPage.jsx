@@ -3,6 +3,7 @@ import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { Building2, Mail, Phone, MapPin, UserPlus, Save, Loader2, Users, Edit2, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ConfirmationModal from '../components/common/ConfirmationModal';
 
 const ClinicSettingsPage = () => {
   const { user } = useContext(AuthContext);
@@ -24,6 +25,10 @@ const ClinicSettingsPage = () => {
   // Edit doctor form state
   const [editingDoctorId, setEditingDoctorId] = useState(null);
   const [editDoctorData, setEditDoctorData] = useState({});
+
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [doctorToDelete, setDoctorToDelete] = useState(null);
 
   const fetchData = async () => {
     try {
@@ -119,17 +124,18 @@ const ClinicSettingsPage = () => {
     }
   };
 
-  const handleDeleteDoctor = async (id) => {
-    if (!window.confirm('Are you sure you want to remove this doctor from the clinic?')) return;
+  const confirmDeleteDoctor = async () => {
+    if (!doctorToDelete) return;
     try {
       setSaving(true);
-      await api.delete(`/clinics/doctors/${id}`);
+      await api.delete(`/clinics/doctors/${doctorToDelete}`);
       toast.success('Doctor removed');
       fetchData();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to delete doctor');
     } finally {
       setSaving(false);
+      setDoctorToDelete(null);
     }
   };
 
@@ -219,7 +225,7 @@ const ClinicSettingsPage = () => {
               <button
                 type="submit"
                 disabled={saving}
-                className="btn-primary w-full justify-center mt-4"
+                className="btn-primary w-full flex items-center justify-center mt-4"
               >
                 <Save size={16} className="mr-2" />
                 {saving ? 'Saving...' : 'Save Changes'}
@@ -347,7 +353,10 @@ const ClinicSettingsPage = () => {
                               </button>
                               {doctor._id !== user?._id && (
                                 <button 
-                                  onClick={() => handleDeleteDoctor(doctor._id)}
+                                  onClick={() => {
+                                    setDoctorToDelete(doctor._id);
+                                    setIsModalOpen(true);
+                                  }}
                                   className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                                   title="Remove Doctor"
                                 >
@@ -375,6 +384,17 @@ const ClinicSettingsPage = () => {
         </div>
 
       </div>
+
+      <ConfirmationModal 
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setDoctorToDelete(null);
+        }}
+        onConfirm={confirmDeleteDoctor}
+        title="Remove Doctor"
+        message="Are you sure you want to remove this doctor from the clinic? They will lose access to the platform."
+      />
     </div>
   );
 };

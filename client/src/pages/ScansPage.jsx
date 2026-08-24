@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { FileImage, BrainCircuit, FileWarning, Search, Eye, Trash2 } from 'lucide-react';
 import Pagination from '../components/common/Pagination';
 import BodyPartIcon from '../components/common/BodyPartIcon';
+import ConfirmationModal from '../components/common/ConfirmationModal';
 
 const ScansPage = () => {
   const [scans, setScans] = useState([]);
@@ -13,6 +14,8 @@ const ScansPage = () => {
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [scanToDelete, setScanToDelete] = useState(null);
 
   const fetchScans = async () => {
     try {
@@ -37,14 +40,16 @@ const ScansPage = () => {
     setPage(1);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this scan? This will also delete the physical file and its AI report.')) return;
+  const confirmDelete = async () => {
+    if (!scanToDelete) return;
     try {
-      await api.delete(`/scans/${id}`);
+      await api.delete(`/scans/${scanToDelete}`);
       toast.success('Scan deleted successfully');
       fetchScans(); // Refresh list
     } catch (err) {
       toast.error('Failed to delete scan');
+    } finally {
+      setScanToDelete(null);
     }
   };
 
@@ -130,7 +135,14 @@ const ScansPage = () => {
                       <Link to={`/scans/${scan._id}`} className="p-2 hover:bg-[var(--bg-elevated)] rounded-lg text-blue-400 inline-block transition-colors" title="View Scan">
                         <Eye size={18} />
                       </Link>
-                      <button onClick={() => handleDelete(scan._id)} className="p-2 hover:bg-red-500/10 rounded-lg text-red-400 inline-block transition-colors" title="Delete Scan">
+                      <button 
+                        onClick={() => {
+                          setScanToDelete(scan._id);
+                          setIsModalOpen(true);
+                        }} 
+                        className="p-2 hover:bg-red-500/10 rounded-lg text-red-400 inline-block transition-colors" 
+                        title="Delete Scan"
+                      >
                         <Trash2 size={18} />
                       </button>
                     </td>
@@ -142,6 +154,17 @@ const ScansPage = () => {
           <Pagination page={page} pages={totalPages} onPageChange={setPage} />
         </div>
       )}
+
+      <ConfirmationModal 
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setScanToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Delete Scan"
+        message="Are you sure you want to delete this scan? This will also delete the physical file and its AI report. This action cannot be undone."
+      />
     </div>
   );
 };

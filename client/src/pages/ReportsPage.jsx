@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import BodyPartIcon from '../components/common/BodyPartIcon';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { FileText, Search, ExternalLink, Clock, FileCheck, Trash2 } from 'lucide-react';
+import { FileText, Search, ExternalLink, Clock, FileCheck, Trash2, CheckCircle, Eye, Download } from 'lucide-react';
 import Pagination from '../components/common/Pagination';
+import ConfirmationModal from '../components/common/ConfirmationModal';
 
 const ReportsPage = () => {
   const [reports, setReports] = useState([]);
@@ -13,6 +14,8 @@ const ReportsPage = () => {
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState(null);
 
   const fetchReports = async () => {
     try {
@@ -37,22 +40,16 @@ const ReportsPage = () => {
     setPage(1);
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this report? This will also delete the generated PDF file.')) return;
+  const confirmDelete = async () => {
+    if (!reportToDelete) return;
     try {
-      await api.delete(`/reports/${id}`);
+      await api.delete(`/reports/${reportToDelete}`);
       toast.success('Report deleted successfully');
-      fetchReports(); // Refresh list
+      fetchReports();
     } catch (err) {
       toast.error('Failed to delete report');
-    }
-  };
-
-  const getStatusBadge = (status) => {
-    switch(status) {
-      case 'finalized': return <span className="badge badge-success flex items-center gap-1"><FileCheck size={12}/> Finalized</span>;
-      case 'reviewed': return <span className="badge badge-primary flex items-center gap-1"><FileText size={12}/> Reviewed</span>;
-      default: return <span className="badge badge-warning flex items-center gap-1"><Clock size={12}/> Draft</span>;
+    } finally {
+      setReportToDelete(null);
     }
   };
 
@@ -60,8 +57,8 @@ const ReportsPage = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-white mb-1">AI Diagnostics Reports</h1>
-          <p className="text-sm text-[var(--text-secondary)]">View and manage all MedGemma generated reports</p>
+          <h1 className="text-2xl font-bold text-white mb-1">Diagnostic Reports</h1>
+          <p className="text-sm text-[var(--text-secondary)]">Review AI-generated and finalized reports</p>
         </div>
       </div>
 
@@ -71,7 +68,7 @@ const ReportsPage = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={18} />
           <input 
             type="text"
-            placeholder="Search by patient name, body part, etc..."
+            placeholder="Search by patient name, condition..."
             className="input-field pl-10"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
@@ -89,9 +86,8 @@ const ReportsPage = () => {
             <thead>
               <tr className="border-b border-[var(--border-color)] bg-[var(--bg-secondary)]/50">
                 <th className="p-4 text-sm font-semibold text-[var(--text-secondary)]">Patient</th>
-                <th className="p-4 text-sm font-semibold text-[var(--text-secondary)]">Scan Modality</th>
-                <th className="p-4 text-sm font-semibold text-[var(--text-secondary)]">Date Generated</th>
-                <th className="p-4 text-sm font-semibold text-[var(--text-secondary)]">Doctor</th>
+                <th className="p-4 text-sm font-semibold text-[var(--text-secondary)]">Impression</th>
+                <th className="p-4 text-sm font-semibold text-[var(--text-secondary)]">Generated</th>
                 <th className="p-4 text-sm font-semibold text-[var(--text-secondary)]">Status</th>
                 <th className="p-4 text-sm font-semibold text-[var(--text-secondary)] text-right">Action</th>
               </tr>
@@ -99,38 +95,56 @@ const ReportsPage = () => {
             <tbody>
               {reports.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="p-8 text-center text-[var(--text-muted)]">No reports found</td>
+                  <td colSpan="5" className="p-8 text-center text-[var(--text-muted)]">No reports found</td>
                 </tr>
               ) : (
                 reports.map(report => (
                   <tr key={report._id} className="border-b border-[var(--border-color)] hover:bg-[var(--bg-secondary)]/30 transition-colors">
                     <td className="p-4">
                       <div className="font-medium text-white">
-                        {report.patient ? `${report.patient.firstName} ${report.patient.lastName}` : 'Unknown Patient'}
+                        {report.patient ? `${report.patient.firstName} ${report.patient.lastName}` : 'Unknown'}
+                      </div>
+                      <div className="text-xs text-[var(--text-secondary)] mt-0.5">
+                        {report.scan ? `${report.scan.imageType.toUpperCase()} - ${report.scan.bodyPart}` : ''}
                       </div>
                     </td>
-                    <td className="p-4 text-[var(--text-primary)]">
-                      {report.scan ? (
-                        <div className="flex items-center gap-2">
-                          <BodyPartIcon bodyPart={report.scan.bodyPart} className="text-[var(--text-secondary)]" />
-                          <span>{report.scan.imageType} - <span className="capitalize">{report.scan.bodyPart}</span></span>
-                        </div>
-                      ) : 'Unknown Scan'}
+                    <td className="p-4">
+                      <div className="text-sm text-[var(--text-primary)] max-w-md truncate">
+                        {report.structuredFindings?.impression || 'No impression recorded'}
+                      </div>
                     </td>
-                    <td className="p-4 text-[var(--text-secondary)]">
+                    <td className="p-4 text-sm text-[var(--text-secondary)]">
                       {new Date(report.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="p-4 text-[var(--text-primary)]">
-                      {report.generatedBy?.name || 'Unknown'}
-                    </td>
                     <td className="p-4">
-                      {getStatusBadge(report.status)}
+                      {report.status === 'finalized' 
+                        ? <span className="badge badge-success flex items-center gap-1 w-max"><CheckCircle size={12}/> Finalized</span>
+                        : <span className="badge badge-warning flex items-center gap-1 w-max"><Clock size={12}/> Needs Review</span>
+                      }
                     </td>
                     <td className="p-4 text-right flex justify-end gap-2">
-                      <Link to={`/scans/${report.scan?._id || report.scan}`} className="p-2 hover:bg-[var(--bg-elevated)] rounded-lg text-blue-400 inline-block transition-colors" title="View Full Scan Details">
-                        <ExternalLink size={18} />
+                      <Link to={`/scans/${report.scan?._id || report.scan}`} className="p-2 hover:bg-[var(--bg-elevated)] rounded-lg text-blue-400 inline-block transition-colors" title="View Details">
+                        <Eye size={18} />
                       </Link>
-                      <button onClick={() => handleDelete(report._id)} className="p-2 hover:bg-red-500/10 rounded-lg text-red-400 inline-block transition-colors" title="Delete Report">
+                      {report.pdfPath && (
+                        <a 
+                          href={report.pdfPath.startsWith('http') ? report.pdfPath : `${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${report.pdfPath}`} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="p-2 hover:bg-[var(--bg-elevated)] rounded-lg text-purple-400 inline-block transition-colors"
+                          title="Download PDF"
+                        >
+                          <Download size={18} />
+                        </a>
+                      )}
+                      <button 
+                        onClick={() => {
+                          setReportToDelete(report._id);
+                          setIsModalOpen(true);
+                        }} 
+                        className="p-2 hover:bg-red-500/10 rounded-lg text-red-400 inline-block transition-colors" 
+                        title="Delete Report"
+                      >
                         <Trash2 size={18} />
                       </button>
                     </td>
@@ -142,6 +156,17 @@ const ReportsPage = () => {
           <Pagination page={page} pages={totalPages} onPageChange={setPage} />
         </div>
       )}
+
+      <ConfirmationModal 
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setReportToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="Delete Report"
+        message="Are you sure you want to delete this report? This will also delete the generated PDF file. This action cannot be undone."
+      />
     </div>
   );
 };

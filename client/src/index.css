@@ -30,6 +30,20 @@
     @apply bg-[var(--bg-primary)] text-[var(--text-primary)] antialiased;
     font-family: 'Titillium Web', system-ui, -apple-system, sans-serif;
   }
+
+  /* Make all interactive elements have a pointer cursor by default */
+  button, 
+  a[href], 
+  select, 
+  [role="button"] {
+    cursor: pointer;
+  }
+  
+  button:disabled,
+  input:disabled,
+  select:disabled {
+    cursor: not-allowed;
+  }
 }
 
 @layer components {
