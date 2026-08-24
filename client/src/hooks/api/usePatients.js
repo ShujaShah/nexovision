@@ -17,7 +17,7 @@ export const usePatient = (id) => {
     queryKey: ['patient', id],
     queryFn: async () => {
       const res = await api.get(`/patients/${id}`);
-      return res.data.data;
+      return { ...res.data.data, recentScans: res.data.recentScans };
     },
     enabled: !!id,
   });
@@ -32,6 +32,22 @@ export const useCreatePatient = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patients'] });
+    },
+  });
+};
+
+export const useUpdatePatient = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, formData }) => {
+      const res = await api.put(`/patients/${id}`, formData);
+      return res.data;
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['patients'] });
+      if (variables.id) {
+        queryClient.invalidateQueries({ queryKey: ['patient', variables.id] });
+      }
     },
   });
 };

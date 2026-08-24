@@ -1,4 +1,5 @@
-version: '3.8'
+name: "nexovision"
+version: "3.8"
 
 services:
   # MongoDB Database

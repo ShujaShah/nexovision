@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import PatientForm from '../components/patients/PatientForm';
 import { usePatient } from '../hooks/api/usePatients';
 import toast from 'react-hot-toast';
-import { Calendar, Phone, Mail, MapPin, Activity, FileText, UploadCloud, User, Clock, Image, ArrowLeft } from 'lucide-react';
+import { Calendar, Phone, Mail, MapPin, Activity, FileText, UploadCloud, User, Clock, Image, ArrowLeft, Edit } from 'lucide-react';
 import BodyPartIcon from '../components/common/BodyPartIcon';
 
 const PatientDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: patientData, isLoading: loading, error } = usePatient(id);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   if (error) {
     toast.error('Failed to load patient details');
@@ -46,9 +49,14 @@ const PatientDetailPage = () => {
           </div>
         </div>
         
-        <Link to="/scans/upload" className="btn-primary flex items-center gap-2">
-          <Image size={18} /> New Scan
-        </Link>
+        <div className="flex items-center gap-3">
+          <button onClick={() => setShowEditModal(true)} className="btn-secondary flex items-center gap-2">
+            <Edit size={18} /> Edit Details
+          </button>
+          <Link to="/scans/upload" className="btn-primary flex items-center gap-2">
+            <Image size={18} /> New Scan
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -107,7 +115,7 @@ const PatientDetailPage = () => {
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-black rounded-lg overflow-hidden flex items-center justify-center border border-[var(--border-color)]">
                         <img 
-                          src={`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${scan.filePath}`} 
+                          src={`${import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000'}${scan.files?.[0]?.filePath || scan.filePath}`} 
                           alt="Thumbnail" 
                           className="w-full h-full object-cover opacity-80"
                         />
@@ -150,6 +158,13 @@ const PatientDetailPage = () => {
           </div>
         </div>
       </div>
+      {showEditModal && (
+        <PatientForm 
+          onClose={() => setShowEditModal(false)} 
+          onSave={() => setShowEditModal(false)} 
+          initialData={patient}
+        />
+      )}
     </div>
   );
 };
