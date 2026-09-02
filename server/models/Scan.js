@@ -19,7 +19,7 @@ const scanSchema = new mongoose.Schema(
     },
     imageType: {
       type: String,
-      enum: ['xray', 'ctscan', 'mri', 'ultrasound', 'other'],
+      enum: ['xray', 'ctscan', 'cect', 'mri', 'ultrasound', 'pet', 'petct', 'angiography', 'other'],
       required: true,
     },
     bodyPart: {

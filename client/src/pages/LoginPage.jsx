@@ -92,7 +92,7 @@ const LoginPage = () => {
     setActiveTab('login');
   };
 
-  const backgroundUrl = '/bg-login.png';
+  const backgroundUrl = '/images/Nexovision-bg.png';
 
   return (
     <div className="min-h-screen flex relative overflow-hidden bg-[#050B14]">

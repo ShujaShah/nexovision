@@ -87,6 +87,11 @@ const ScanUpload = ({ onUpload }) => {
               <option value="ctscan">CT Scan</option>
               <option value="mri">MRI</option>
               <option value="ultrasound">Ultrasound</option>
+              <option value="cect">CECT (Contrast-Enhanced CT)</option>
+              <option value="pet">PET Scan</option>
+              <option value="petct">PET-CT</option>
+              <option value="angiography">Angiography</option>
+              <option value="other">Other</option>
             </select>
           </div>
 
